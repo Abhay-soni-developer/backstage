@@ -18,7 +18,7 @@ import { Box, IconButton, Tooltip, Typography } from '@material-ui/core';
 import { default as React } from 'react';
 import JenkinsLogo from './../../assets/JenkinsLogo.svg';
 import { useJobRuns } from './../useJobRuns';
-import { Job, JobBuild } from './../../api/JenkinsApi';
+import { Job, JobBuildRun } from './../../api/JenkinsApi';
 import { JenkinsRunStatus } from './../BuildsPage/lib/Status';
 import VisibilityIcon from '@material-ui/icons/Visibility';
 import { jobRunsRouteRef } from '../../plugin';
@@ -28,7 +28,7 @@ const generatedColumns: TableColumn[] = [
   {
     title: 'Number',
     field: 'number',
-    render: (row: Partial<JobBuild>) => {
+    render: (row: Partial<JobBuildRun>) => {
       return (
         <Box display="flex" alignItems="center">
           <Typography paragraph>
@@ -41,7 +41,7 @@ const generatedColumns: TableColumn[] = [
   {
     title: 'Timestamp',
     field: 'timestamp',
-    render: (row: Partial<JobBuild>) => {
+    render: (row: Partial<JobBuildRun>) => {
       return (
         <Box display="flex" alignItems="center">
           <Typography>
@@ -54,7 +54,7 @@ const generatedColumns: TableColumn[] = [
   {
     title: 'Result',
     field: 'result',
-    render: (row: Partial<JobBuild>) => {
+    render: (row: Partial<JobBuildRun>) => {
       return (
         <Box display="flex" alignItems="center">
           {row.inProgress ? (
@@ -69,7 +69,7 @@ const generatedColumns: TableColumn[] = [
   {
     title: 'Duration',
     field: 'duration',
-    render: (row: Partial<JobBuild>) => {
+    render: (row: Partial<JobBuildRun>) => {
       return (
         <Box display="flex" alignItems="center">
           <Typography>
@@ -84,7 +84,7 @@ const generatedColumns: TableColumn[] = [
 
   {
     title: 'Actions',
-    render: (row: Partial<JobBuild>) => {
+    render: (row: Partial<JobBuildRun>) => {
       const ActionWrapper = () => {
         return (
           <div style={{ width: '98px' }}>
@@ -174,8 +174,8 @@ export const JobRunsTableView = ({
 };
 
 export const JobRunsTable = () => {
-  const { jobFullName } = useRouteRefParams(jobRunsRouteRef);
-  const [tableProps, { setPage, setPageSize }] = useJobRuns(jobFullName);
+  const { jobFullUrl } = useRouteRefParams(jobRunsRouteRef);
+  const [tableProps, { setPage, setPageSize }] = useJobRuns(jobFullUrl);
 
   return (
     <JobRunsTableView

@@ -63,13 +63,14 @@ export class JenkinsApiImpl {
 
   private static readonly jobsTreeSpec = `jobs[
                    ${JenkinsApiImpl.jobTreeSpec}
-                 ]{0,50}`;
+                 ]`;
 
   private static readonly jobBuildsTreeSpec = `
                    name,
                    description,
                    url,
                    fullName,
+                   buildable,
                    displayName,
                    fullDisplayName,
                    inQueue,
@@ -81,7 +82,11 @@ export class JenkinsApiImpl {
    * Get a list of projects for the given JenkinsInfo.
    * @see ../../../jenkins/src/api/JenkinsApi.ts#getProjects
    */
-  async getProjects(jenkinsInfo: JenkinsInfo, branches?: string[]) {
+  async getProjects(
+    jenkinsInfo: JenkinsInfo,
+    branches?: string[],
+    jobName?: string,
+  ) {
     const client = await JenkinsApiImpl.getClient(jenkinsInfo);
     const projects: BackstageProject[] = [];
 
@@ -91,7 +96,9 @@ export class JenkinsApiImpl {
       const job = await Promise.any(
         branches.map(branch =>
           client.job.get({
-            name: `${jenkinsInfo.jobFullName}/${encodeURIComponent(branch)}`,
+            name: `${jobName || jenkinsInfo.jobFullName}/${encodeURIComponent(
+              branch,
+            )}`,
             tree: JenkinsApiImpl.jobTreeSpec.replace(/\s/g, ''),
           }),
         ),
@@ -103,7 +110,7 @@ export class JenkinsApiImpl {
       // a MultiBranch Pipeline (folder with one job per branch) project
       // a Pipeline (standalone) project
       const project = await client.job.get({
-        name: jenkinsInfo.jobFullName,
+        name: jobName || jenkinsInfo.jobFullName,
         // Filter only be the information we need, instead of loading all fields.
         // Limit to only show the latest build for each job and only load 50 jobs
         // at all.
@@ -115,7 +122,7 @@ export class JenkinsApiImpl {
       const isStandaloneProject = !project.jobs;
       if (isStandaloneProject) {
         const standaloneProject = await client.job.get({
-          name: jenkinsInfo.jobFullName,
+          name: jobName || jenkinsInfo.jobFullName,
           tree: JenkinsApiImpl.jobTreeSpec.replace(/\s/g, ''),
         });
         projects.push(this.augmentProject(standaloneProject));
@@ -341,23 +348,9 @@ export class JenkinsApiImpl {
     return `${jenkinsInfo.baseUrl}/job/${jobs.join('/job/')}/${buildId}`;
   }
 
-  async getJobBuilds(jenkinsInfo: JenkinsInfo, jobFullName: string) {
-    let jobName = jobFullName;
-
-    if (jobFullName.includes('/')) {
-      const arr = jobFullName.split('/');
-      const multibranchJobName = arr.shift();
-      jobName = [
-        multibranchJobName,
-        'job',
-        encodeURIComponent(arr.join('/')),
-      ].join('/');
-    }
-
+  async getJobBuilds(jenkinsInfo: JenkinsInfo, jobUrl: string) {
     const response = await fetch(
-      `${
-        jenkinsInfo.baseUrl
-      }/job/${jobName}/api/json?tree=${JenkinsApiImpl.jobBuildsTreeSpec.replace(
+      `${jobUrl}/api/json?tree=${JenkinsApiImpl.jobBuildsTreeSpec.replace(
         /\s/g,
         '',
       )}`,

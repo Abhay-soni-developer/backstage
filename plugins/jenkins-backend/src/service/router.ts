@@ -70,6 +70,8 @@ export async function createRouter(
     '/v1/entity/:namespace/:kind/:name/projects',
     async (request, response) => {
       const { namespace, kind, name } = request.params;
+      const { jobName } = request.query
+
       const token = getBearerTokenFromAuthorizationHeader(
         request.header('authorization'),
       );
@@ -100,7 +102,7 @@ export async function createRouter(
       });
 
       try {
-        const projects = await jenkinsApi.getProjects(jenkinsInfo, branches);
+        const projects = await jenkinsApi.getProjects(jenkinsInfo, branches, (jobName || "") as string);
 
         response.json({
           projects: projects,
@@ -152,12 +154,12 @@ export async function createRouter(
   );
 
   router.get(
-    '/v1/entity/:namespace/:kind/:name/job/:jobFullName',
+    '/v1/entity/:namespace/:kind/:name/job/:jobFullUrl',
     async (request, response) => {
       const token = getBearerTokenFromAuthorizationHeader(
         request.header('authorization'),
       );
-      const { namespace, kind, name, jobFullName } = request.params;
+      const { namespace, kind, name, jobFullUrl } = request.params;
 
       const jenkinsInfo = await jenkinsInfoProvider.getInstance({
         entityRef: {
@@ -165,11 +167,10 @@ export async function createRouter(
           namespace,
           name,
         },
-        jobFullName,
         backstageToken: token,
       });
 
-      const build = await jenkinsApi.getJobBuilds(jenkinsInfo, jobFullName);
+      const build = await jenkinsApi.getJobBuilds(jenkinsInfo, jobFullUrl);
 
       response.json({
         build: build,

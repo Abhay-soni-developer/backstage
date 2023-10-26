@@ -25,6 +25,7 @@ import { Project } from '../../../../api/JenkinsApi';
 import { buildRouteRef, jobRunsRouteRef } from '../../../../plugin';
 import { JenkinsRunStatus } from '../Status';
 import { jenkinsExecutePermission } from '@backstage/plugin-jenkins-common';
+import PageviewIcon from '@material-ui/icons/Pageview';
 
 const FailCount = ({ count }: { count: number }): JSX.Element | null => {
   if (count !== 0) {
@@ -91,20 +92,22 @@ export const columnFactories = Object.freeze({
     };
   },
 
-  createBuildColumn(): TableColumn<Project> {
+  createNameColumn(): TableColumn<Project> {
     return {
-      title: 'Build',
-      field: 'fullName',
+      title: 'Name',
+      field: 'displayName',
       highlight: true,
+      searchable: true,
       render: (row: Partial<Project>) => {
         const LinkWrapper = () => {
           const routeLink = useRouteRef(buildRouteRef);
+
           if (!row.fullName || !row.lastBuild?.number) {
             return (
               <>
-                {row.fullName ||
+                {row.displayName ||
+                  row.fullName ||
                   row.fullDisplayName ||
-                  row.displayName ||
                   'Unknown'}
               </>
             );
@@ -241,8 +244,26 @@ export const columnFactories = Object.freeze({
             }
           };
 
+          const entityType = row._class?.split('.').pop();
+          let showViewBuilds: boolean = false;
+
+          if (entityType === 'FreeStyleProject') {
+            showViewBuilds = true;
+          } else if (entityType === 'WorkflowJob') {
+            showViewBuilds = true;
+          }
+
           return (
-            <div style={{ width: '148px' }}>
+            <div style={{ width: '208px' }}>
+              {!showViewBuilds && row.url && (
+                <Link to={`?jobName=${row.fullName}`}>
+                  <Tooltip title="Load Job">
+                    <IconButton>
+                      <PageviewIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Link>
+              )}
               {row.lastBuild?.url && (
                 <Tooltip title="View build">
                   <IconButton href={row.lastBuild.url} target="_blank">
@@ -261,17 +282,19 @@ export const columnFactories = Object.freeze({
                   </IconButton>
                 </Tooltip>
               )}
-              <Link
-                to={jobRunsLink({
-                  jobFullName: encodeURIComponent(row.fullName || ''),
-                })}
-              >
-                <Tooltip title="View Runs">
-                  <IconButton>
-                    <HistoryIcon />
-                  </IconButton>
-                </Tooltip>
-              </Link>
+              {showViewBuilds && (
+                <Link
+                  to={jobRunsLink({
+                    jobFullUrl: encodeURIComponent(row.url || ''),
+                  })}
+                >
+                  <Tooltip title="View Runs">
+                    <IconButton>
+                      <HistoryIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Link>
+              )}
             </div>
           );
         };

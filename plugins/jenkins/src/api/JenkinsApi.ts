@@ -56,7 +56,7 @@ export interface Build {
   };
   status: string; // == building ? 'running' : result,
 }
-export interface JobBuild {
+export interface JobBuildRun {
   timestamp: number;
   building: boolean;
   duration: number;
@@ -78,17 +78,21 @@ export interface Job {
   inQueue: boolean;
   fullName: string;
   url: string;
-  builds: JobBuild[];
+  builds: JobBuildRun[];
+  buildable: boolean;
 }
 
 /** @public */
 export interface Project {
   // standard Jenkins
+  _class: string;
   lastBuild: Build;
   displayName: string;
   fullDisplayName: string;
   fullName: string;
   inQueue: string;
+  buildable: boolean;
+  url: string;
   // added by us
   status: string; // == inQueue ? 'queued' : lastBuild.building ? 'running' : lastBuild.result,
   onRestartClick: () => Promise<void>; // TODO rename to handle.* ? also, should this be on lastBuild?
@@ -108,6 +112,7 @@ export interface JenkinsApi {
     entity: CompoundEntityRef;
     /** a filter on jobs. Currently this just takes a branch (and assumes certain structures in jenkins) */
     filter: { branch?: string };
+    jobName?: string;
   }): Promise<Project[]>;
 
   /**
@@ -125,7 +130,7 @@ export interface JenkinsApi {
 
   getJobBuilds(options: {
     entity: CompoundEntityRef;
-    jobFullName: string;
+    jobFullUrl: string;
   }): Promise<Job>;
 
   retry(options: {
@@ -150,6 +155,7 @@ export class JenkinsClient implements JenkinsApi {
   async getProjects(options: {
     entity: CompoundEntityRef;
     filter: { branch?: string };
+    jobName?: string
   }): Promise<Project[]> {
     const { entity, filter } = options;
     const url = new URL(
@@ -162,6 +168,10 @@ export class JenkinsClient implements JenkinsApi {
 
     if (filter.branch) {
       url.searchParams.append('branch', filter.branch);
+    }
+
+    if (options.jobName) {
+      url.searchParams.append('jobName', options.jobName);
     }
 
     const idToken = await this.getToken();
@@ -245,15 +255,15 @@ export class JenkinsClient implements JenkinsApi {
 
   async getJobBuilds(options: {
     entity: CompoundEntityRef;
-    jobFullName: string;
+    jobFullUrl: string;
   }): Promise<Job> {
-    const { entity, jobFullName } = options;
+    const { entity, jobFullUrl } = options;
     const url = `${await this.discoveryApi.getBaseUrl(
       'jenkins',
     )}/v1/entity/${encodeURIComponent(entity.namespace)}/${encodeURIComponent(
       entity.kind,
     )}/${encodeURIComponent(entity.name)}/job/${encodeURIComponent(
-      jobFullName,
+      jobFullUrl,
     )}`;
 
     const idToken = await this.getToken();

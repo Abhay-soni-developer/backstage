@@ -22,6 +22,7 @@ import JenkinsLogo from '../../../../assets/JenkinsLogo.svg';
 import { useBuilds } from '../../../useBuilds';
 import { columnFactories } from './columns';
 import { defaultCITableColumns } from './presets';
+import { useSearchParams } from 'react-router-dom';
 
 type Props = {
   loading: boolean;
@@ -86,7 +87,9 @@ type CITableProps = {
 };
 
 export const CITable = ({ columns }: CITableProps) => {
-  const [tableProps, { setPage, retry, setPageSize }] = useBuilds();
+  const [searchParams] = useSearchParams();
+  const newJobName = searchParams.get("jobName")
+  const [tableProps, { setPage, retry, setPageSize }] = useBuilds({}, newJobName || "");
 
   return (
     <CITableView

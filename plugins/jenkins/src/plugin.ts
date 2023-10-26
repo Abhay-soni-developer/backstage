@@ -41,7 +41,7 @@ export const buildRouteRef = createSubRouteRef({
 /** @public */
 export const jobRunsRouteRef = createSubRouteRef({
   id: 'jenkins/job/runs',
-  path: '/builds/:jobFullName/runs',
+  path: '/builds/:jobFullUrl/runs',
   parent: rootRouteRef,
 });
 

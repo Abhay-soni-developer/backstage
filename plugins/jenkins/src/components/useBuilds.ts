@@ -31,7 +31,7 @@ export enum ErrorType {
  *
  * TODO: deprecate branch and add a generic filter concept.
  */
-export function useBuilds({ branch }: { branch?: string } = {}) {
+export function useBuilds({ branch }: { branch?: string } = {}, jobName: string = "") {
   const { entity } = useEntity();
   const entityName = getCompoundEntityRef(entity);
   const api = useApi(jenkinsApiRef);
@@ -62,6 +62,7 @@ export function useBuilds({ branch }: { branch?: string } = {}) {
       const build = await api.getProjects({
         entity: getCompoundEntityRef(entity),
         filter: { branch },
+        jobName
       });
 
       setTotal(build.length);
@@ -74,7 +75,7 @@ export function useBuilds({ branch }: { branch?: string } = {}) {
       setError({ message: e.message, errorType });
       throw e;
     }
-  }, [api, errorApi, entity, branch]);
+  }, [api, errorApi, entity, branch, jobName]);
 
   return [
     {
